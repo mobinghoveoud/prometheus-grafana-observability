@@ -1,6 +1,6 @@
 # Prometheus + Grafana Observability Demo
 
-> [Project Architecture Image Placeholder]
+![monitoring](images/montoring.png)
 
 A full-stack observability demo built with FastAPI, Prometheus, Grafana, Alertmanager, cAdvisor, Node Exporter, and
 Locust.
