@@ -1,0 +1,28 @@
+groups:
+  - name: AppAlerts
+    rules:
+      - alert: HighUnstableEndpointErrorRate
+        expr: |
+          sum(rate(http_requests_total{endpoint="unstable",status=~"5.."}[2m]))
+          /
+          clamp_min(sum(rate(http_requests_total{endpoint="unstable"}[2m])), 0.001)
+          > 0.25
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate on unstable endpoint"
+          description: "The unstable endpoint is returning 5xx responses at a high rate."
+
+      - alert: HighDBLikeP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_request_duration_seconds_bucket{endpoint="db_like"}[5m])) by (le)
+          ) > 0.25
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency on DB-like endpoint"
+          description: "The DB-like endpoint p95 latency is above the expected threshold."

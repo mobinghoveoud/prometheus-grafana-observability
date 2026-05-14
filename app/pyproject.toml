@@ -1,0 +1,12 @@
+[project]
+name = "prometheus-grafana-observability"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi~=0.136.1",
+    "locust~=2.44.0",
+    "prometheus-client~=0.25.0",
+    "uvicorn[standard]~=0.46.0",
+]

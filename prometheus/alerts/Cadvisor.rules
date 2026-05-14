@@ -1,0 +1,39 @@
+groups:
+- name: CadvisorAlerts
+  rules:
+
+  - alert: CadvisorDown
+    expr: up{job="cadvisor"} == 0
+    for: 30s
+    labels:
+      severity: critical
+    annotations:
+      summary: "CAdvisor instance down"
+      description: "Instance {{ $labels.instance }} of job {{ $labels.job }} has been down for more than 30 seconds."
+
+  - alert: ContainerCpuUsage
+    expr: (sum  by(instance, name) (rate(container_cpu_usage_seconds_total[30s])) * 100) > 90
+    for: 30s
+    labels:
+      severity: warning
+    annotations:
+      summary: "Container CPU usage (instance {{ $labels.instance }})"
+      description: "Container CPU usage is above 80%\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+  - alert: ContainerVolumeUsage
+    expr: (1 - (sum(container_fs_inodes_free) BY (instance) / sum(container_fs_inodes_total) BY (instance)) * 100) > 90
+    for: 30s
+    labels:
+      severity: warning
+    annotations:
+      summary: "Container Volume usage (instance {{ $labels.instance }})"
+      description: "Container Volume usage is above 90%\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+
+  - alert: ContainerVolumeIoUsage
+    expr: (sum(container_fs_io_current) BY (instance, name) * 100) > 90
+    for: 30s
+    labels:
+      severity: warning
+    annotations:
+      summary: "Container Volume IO usage (instance {{ $labels.instance }})"
+      description: "Container Volume IO usage is above 90%\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"

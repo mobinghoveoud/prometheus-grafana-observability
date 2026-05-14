@@ -1,0 +1,118 @@
+name: observability
+
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: app
+    volumes:
+      - ./app:/app
+    restart: on-failure
+    networks:
+      - app_net
+    ports:
+      - "8000:8000"
+      - "8089:8089"
+
+  prometheus:
+    image: prom/prometheus:v3.11.3
+    container_name: prometeheus
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus:/etc/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --storage.tsdb.retention.size=150GB
+      - --web.enable-lifecycle
+    restart: on-failure
+    networks:
+      - app_net
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:13.0
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_INSTALL_PLUGINS=${GRAFANA_INSTALL_PLUGINS}
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_PATHS_DATA=/var/lib/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/:/etc/grafana/provisioning/
+    restart: on-failure
+    networks:
+      - app_net
+    ports:
+      - "3000:3000"
+
+  alertmanager:
+    image: prom/alertmanager:v0.32.1
+    container_name: alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - alertmanager_data:/alertmanager
+      - ./alertmanager:/etc/alertmanager
+    restart: on-failure
+    networks:
+      - app_net
+    ports:
+      - "9093:9093"
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:0.56.2
+    container_name: cadvisor
+    command: --disable_metrics=disk,udp,percpu,referenced_memory
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: on-failure
+    networks:
+      - app_net
+    ports:
+      - "8080:8080"
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    restart: on-failure
+    networks:
+      - app_net
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  node-exporter:
+    image: prom/node-exporter:v1.11.1
+    container_name: node-exporter
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    restart: on-failure
+    networks:
+      - app_net
+    ports:
+      - "9100:9100"
+
+networks:
+  app_net:
+
+volumes:
+  grafana_data:
+  prometheus_data:
+  alertmanager_data:
